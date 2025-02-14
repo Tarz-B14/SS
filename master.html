@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Master Data View</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+    <section class="hero is-primary is-bold">
+        <div class="hero-body">
+            <div class="container">
+                <h1 class="title">Master Data View</h1>
+            </div>
+        </div>
+    </section>
+
+    <div class="container m-4 p-4">
+        <div class="field">
+            <label class="label">Select Date:</label>
+            <div class="control">
+                <input type="date" id="datePicker" required>
+            </div>
+        </div>
+
+        <div class="field">
+            <div class="control">
+                <button class="button is-primary" id="downloadButton">Download Data</button>
+            </div>
+        </div>
+
+        <div id="message" style="display: none; color: red;"></div>
+
+    </div>
+
+    <script>
+        document.getElementById("downloadButton").addEventListener("click", function() {
+            const selectedDate = document.getElementById("datePicker").value;
+            const messageDiv = document.getElementById("message");
+
+            if (!selectedDate) {
+                messageDiv.textContent = "Please select a date.";
+                messageDiv.style.display = "block";
+                return;
+            }
+            messageDiv.style.display = "none";
+
+            // Fetch data from Google Apps Script (replace with your actual URL)
+            fetch(`https://script.google.com/macros/s/AKfycbwZs8Xrras4QGWHpHbFsDXf2igVSp8tgHiYY1sXrZ8cfvrhwpjJp2R1fNdTYfsq-WP0fw/exec?date=${selectedDate}`) // Pass the date as a query parameter
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json(); // Assuming your script returns JSON data
+                })
+                .then(data => {
+                    if (!data || data.length === 0) {
+                        messageDiv.textContent = "No data found for the selected date.";
+                        messageDiv.style.display = "block";
+                        return;
+                    }
+
+                    // Convert data to CSV format
+                    const csv = convertToCSV(data);
+
+                    // Create a download link
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement("a");
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", `data_${selectedDate}.csv`);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                })
+                .catch(error => {
+                    console.error("Error fetching data:", error);
+                    messageDiv.textContent = "Error downloading data. Please try again later.";
+                    messageDiv.style.display = "block";
+                });
+        });
+
+        function convertToCSV(data) {
+            const header = Object.keys(data[0]).join(","); // Get headers from the first object
+            const rows = data.map(item => Object.values(item).join(",")).join("\n"); // Get values from all objects
+            return `${header}\n${rows}`;
+        }
+    </script>
+</body>
+</html>

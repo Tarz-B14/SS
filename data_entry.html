@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Data Entry Form</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+    <script>
+        document.getElementById("form").addEventListener("submit", function(e) {
+            e.preventDefault(); // Prevent default form submission
+
+            const loggedInUser = localStorage.getItem('loggedInUser'); // Get logged-in user
+            if (!loggedInUser) {
+                alert("You are not logged in."); // Or redirect to login page
+                return;
+            }
+
+            document.getElementById("message").textContent = "Submitting..";
+            document.getElementById("message").style.display = "block";
+            document.getElementById("submit-button").disabled = true;
+
+            const formData = new FormData(this);
+            const data = {}; // Object to store form data
+
+            // Convert FormData to a regular object
+            formData.forEach((value, key) => {
+                data[key] = value;
+            });
+
+            // Add the username to the data
+            data.SubmittedBy = loggedInUser;
+
+            // Send POST request to Google Apps Script
+            fetch("YOUR_GOOGLE_APPS_SCRIPT_URL", { // Replace with your script URL
+                method: "POST",
+                body: JSON.stringify(data), // Send data as JSON
+                headers: {
+                    "Content-Type": "application/json" // Important: Set content type to JSON
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json(); // Assuming your script returns JSON
+            })
+            .then(responseData => {
+                document.getElementById("message").textContent = "Data submitted successfully!";
+                document.getElementById("message").style.backgroundColor = "green";
+                document.getElementById("message").style.color = "beige";
+                document.getElementById("submit-button").disabled = false;
+                document.getElementById("form").reset(); // Clear the form
+
+                setTimeout(() => {
+                    document.getElementById("message").textContent = "";
+                    document.getElementById("message").style.display = "none";
+                }, 2600);
+            })
+            .catch(error => {
+                console.error("Error submitting form:", error);
+                document.getElementById("message").textContent = "An error occurred. Please try again.";
+                document.getElementById("message").style.display = "block";
+                document.getElementById("message").style.backgroundColor = "red"; // Change color for error
+                document.getElementById("message").style.color = "white";
+
+            })
+            .finally(() => {
+                document.getElementById("submit-button").disabled = false; // Enable button in any case
+            });
+        });
+    </script>
+</body>
+</html>
